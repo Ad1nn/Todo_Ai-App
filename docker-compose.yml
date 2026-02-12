@@ -1,0 +1,83 @@
+# =============================================================================
+# Docker Compose - Local Development & Testing
+# =============================================================================
+#
+# LEARNING NOTES:
+# - Docker Compose manages multiple containers as a single application
+# - Services can communicate using service names as hostnames
+# - Volumes persist data between container restarts
+# - Environment variables configure the applications
+#
+# Usage:
+#   docker compose up --build    # Build and start all services
+#   docker compose down          # Stop and remove containers
+#   docker compose logs -f       # Follow logs from all services
+#
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend API Service
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: todo-backend
+    ports:
+      # Map container port 8000 to host port 8000
+      # Format: "host:container"
+      - "8000:8000"
+    environment:
+      # Database connection (use external Neon PostgreSQL)
+      # In production, use Kubernetes secrets instead
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-change-in-production}
+      - JWT_ALGORITHM=HS256
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - todo-network
+
+  # ---------------------------------------------------------------------------
+  # Frontend Web Application
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Pass API URL at build time (baked into the JavaScript bundle)
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    container_name: todo-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - todo-network
+
+# =============================================================================
+# Networks
+# =============================================================================
+# Custom bridge network for service-to-service communication
+# Services can reach each other by name: http://backend:8000
+networks:
+  todo-network:
+    driver: bridge

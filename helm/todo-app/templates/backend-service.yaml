@@ -1,0 +1,37 @@
+{{/*
+=============================================================================
+backend-service.yaml - Backend Service
+=============================================================================
+
+LEARNING NOTES:
+- Service provides a stable network endpoint for pods
+- Pods come and go, but the Service IP/DNS stays constant
+- Types:
+  - ClusterIP: Internal only (default)
+  - NodePort: Expose on each node's IP at a static port
+  - LoadBalancer: Provision external load balancer (cloud)
+- DNS: <service-name>.<namespace>.svc.cluster.local
+
+=============================================================================
+*/}}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "todo-app.backend.fullname" . }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    {{- include "todo-app.backend.selectorLabels" . | nindent 4 }}
+spec:
+  type: {{ .Values.backend.service.type }}
+  ports:
+    - port: {{ .Values.backend.service.port }}  # Service port
+      targetPort: http                           # Container port (by name)
+      protocol: TCP
+      name: http
+      {{- if and (eq .Values.backend.service.type "NodePort") .Values.backend.service.nodePort }}
+      nodePort: {{ .Values.backend.service.nodePort }}
+      {{- end }}
+  # Route traffic to pods with these labels
+  selector:
+    {{- include "todo-app.backend.selectorLabels" . | nindent 4 }}

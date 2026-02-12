@@ -1,0 +1,195 @@
+openapi: 3.0.3
+info:
+  title: Todo App - Task API Extensions
+  description: Extended task endpoints for recurring tasks
+  version: 1.0.0
+
+paths:
+  /api/v1/tasks:
+    post:
+      summary: Create a new task (extended)
+      tags: [Tasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreateExtended'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskExtended'
+
+  /api/v1/tasks/{task_id}:
+    patch:
+      summary: Update a task (extended)
+      tags: [Tasks]
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdateExtended'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskExtended'
+
+  /api/v1/tasks/{task_id}/complete:
+    post:
+      summary: Complete a task (handles recurring)
+      tags: [Tasks]
+      description: |
+        Marks task as complete. If task has a recurrence_rule other than 'none',
+        a new task instance is automatically created with the next due date.
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  completed_task:
+                    $ref: '#/components/schemas/TaskExtended'
+                  next_occurrence:
+                    $ref: '#/components/schemas/TaskExtended'
+                    nullable: true
+                    description: New task if recurring, null if not
+
+components:
+  schemas:
+    RecurrenceRule:
+      type: string
+      enum: [none, daily, weekly, monthly]
+      default: none
+
+    TaskCreateExtended:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+          nullable: true
+        category:
+          type: string
+          maxLength: 50
+          nullable: true
+        recurrence_rule:
+          $ref: '#/components/schemas/RecurrenceRule'
+
+    TaskUpdateExtended:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+          nullable: true
+        category:
+          type: string
+          maxLength: 50
+          nullable: true
+        recurrence_rule:
+          $ref: '#/components/schemas/RecurrenceRule'
+        completed:
+          type: boolean
+
+    TaskExtended:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - completed
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        completed:
+          type: boolean
+        recurrence_rule:
+          $ref: '#/components/schemas/RecurrenceRule'
+        parent_task_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the original recurring task this was created from
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

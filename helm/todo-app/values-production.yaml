@@ -1,0 +1,164 @@
+# =============================================================================
+# values-production.yaml - Production Environment Configuration
+# =============================================================================
+#
+# Usage: helm upgrade --install todo-app ./helm/todo-app -f helm/todo-app/values-production.yaml
+#
+# IMPORTANT: Never commit secrets! Use external secrets management.
+#
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Backend Configuration - Production
+# ---------------------------------------------------------------------------
+backend:
+  replicaCount: 2
+
+  image:
+    repository: registry.digitalocean.com/todo-registry/todo-backend
+    pullPolicy: Always
+    tag: "latest"  # Overridden by CI/CD with git SHA
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  env:
+    JWT_ALGORITHM: "HS256"
+    CORS_ORIGINS: '["https://todo-app.example.com"]'
+    LOG_LEVEL: "INFO"
+
+  # Dapr configuration
+  dapr:
+    enabled: true
+    appId: "todo-backend"
+    appPort: "8000"
+
+  # Production-grade probes
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# ---------------------------------------------------------------------------
+# Frontend Configuration - Production
+# ---------------------------------------------------------------------------
+frontend:
+  replicaCount: 2
+
+  image:
+    repository: registry.digitalocean.com/todo-registry/todo-frontend
+    pullPolicy: Always
+    tag: "latest"  # Overridden by CI/CD with git SHA
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  env:
+    NODE_ENV: "production"
+    NEXT_PUBLIC_API_URL: "https://api.todo-app.example.com"
+
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 20
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 15
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# ---------------------------------------------------------------------------
+# Ingress Configuration - Production
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+  hosts:
+    - host: todo-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+    - host: api.todo-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: backend
+  tls:
+    - secretName: todo-app-prod-tls
+      hosts:
+        - todo-app.example.com
+        - api.todo-app.example.com
+
+# ---------------------------------------------------------------------------
+# Dapr Components - Production
+# ---------------------------------------------------------------------------
+dapr:
+  enabled: true
+  pubsub:
+    name: "todo-pubsub"
+    type: "pubsub.kafka"
+    brokers: "redpanda-production:9092"
+    consumerGroup: "todo-backend-production"
+
+# ---------------------------------------------------------------------------
+# Autoscaling - Enabled for Production
+# ---------------------------------------------------------------------------
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# ---------------------------------------------------------------------------
+# Pod Disruption Budget - Enabled for Production
+# ---------------------------------------------------------------------------
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

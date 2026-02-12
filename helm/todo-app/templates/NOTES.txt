@@ -1,0 +1,73 @@
+====================================================================
+🚀 Todo App has been deployed!
+====================================================================
+
+📋 DEPLOYMENT SUMMARY
+---------------------
+Release Name: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+App Version: {{ .Chart.AppVersion }}
+
+🔗 ACCESS YOUR APPLICATION
+--------------------------
+
+{{- if eq .Values.frontend.service.type "NodePort" }}
+Frontend URL (Minikube):
+  Run: minikube service {{ include "todo-app.frontend.fullname" . }} --url
+
+Or if you know your Minikube IP:
+  http://$(minikube ip):{{ .Values.frontend.service.nodePort }}
+
+{{- else if eq .Values.frontend.service.type "LoadBalancer" }}
+Frontend URL (LoadBalancer):
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  Run: kubectl get svc {{ include "todo-app.frontend.fullname" . }} -w
+
+{{- else }}
+Frontend (ClusterIP - internal only):
+  Run: kubectl port-forward svc/{{ include "todo-app.frontend.fullname" . }} 3000:{{ .Values.frontend.service.port }}
+  Then access: http://localhost:3000
+{{- end }}
+
+Backend API (internal):
+  URL: http://{{ include "todo-app.backend.fullname" . }}:{{ .Values.backend.service.port }}
+
+  For debugging, port-forward:
+    kubectl port-forward svc/{{ include "todo-app.backend.fullname" . }} 8000:{{ .Values.backend.service.port }}
+    Then access: http://localhost:8000/docs
+
+📊 USEFUL COMMANDS
+------------------
+# View pod status
+kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+# View logs
+kubectl logs -l app.kubernetes.io/instance={{ .Release.Name }} -f
+
+# Describe resources
+kubectl describe pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+# Scale deployments
+kubectl scale deployment {{ include "todo-app.backend.fullname" . }} --replicas=3
+kubectl scale deployment {{ include "todo-app.frontend.fullname" . }} --replicas=3
+
+# Upgrade release
+helm upgrade {{ .Release.Name }} ./helm/todo-app
+
+# Rollback if needed
+helm rollback {{ .Release.Name }} 1
+
+⚠️  IMPORTANT NOTES
+--------------------
+1. Make sure you've set the required secrets:
+   - DATABASE_URL
+   - JWT_SECRET
+   - OPENAI_API_KEY
+
+2. For Minikube, ensure you've built images in Minikube's Docker:
+   eval $(minikube docker-env)
+   docker build -t todo-backend:latest ./backend
+   docker build -t todo-frontend:latest ./frontend
+
+3. Happy hacking! 🎉

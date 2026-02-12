@@ -1,0 +1,343 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Linear-inspired light theme */
+    --color-background: 250 250 250;
+    --color-background-secondary: 255 255 255;
+    --color-foreground: 23 23 23;
+    --color-foreground-secondary: 115 115 115;
+    --color-border: 229 229 229;
+    --color-accent: 99 102 241;
+    --color-accent-secondary: 139 92 246;
+  }
+
+  .dark {
+    /* Linear-inspired dark theme */
+    --color-background: 13 13 15;
+    --color-background-secondary: 23 23 28;
+    --color-foreground: 245 245 245;
+    --color-foreground-secondary: 163 163 163;
+    --color-border: 38 38 42;
+    --color-accent: 99 102 241;
+    --color-accent-secondary: 139 92 246;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply dark:bg-[#0d0d0f] dark:text-gray-100;
+  }
+
+  /* Custom scrollbar - Linear style */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-700 rounded-full;
+    @apply hover:bg-gray-400 dark:hover:bg-gray-600;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-indigo-500/30;
+  }
+}
+
+@layer components {
+  /* Linear-style gradient backgrounds */
+  .bg-gradient-linear {
+    background: linear-gradient(135deg,
+      rgba(99, 102, 241, 0.08) 0%,
+      rgba(139, 92, 246, 0.08) 50%,
+      rgba(236, 72, 153, 0.05) 100%
+    );
+  }
+
+  .dark .bg-gradient-linear {
+    background: linear-gradient(135deg,
+      rgba(99, 102, 241, 0.15) 0%,
+      rgba(139, 92, 246, 0.1) 50%,
+      rgba(236, 72, 153, 0.05) 100%
+    );
+  }
+
+  /* Glow effect for accents */
+  .glow {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+  }
+
+  /* Linear-style card */
+  .card-linear {
+    @apply rounded-xl bg-white dark:bg-[#17171c];
+    @apply border border-gray-200 dark:border-gray-800;
+    @apply shadow-sm;
+    @apply transition-all duration-200;
+  }
+
+  .card-linear:hover {
+    @apply border-gray-300 dark:border-gray-700;
+    @apply shadow-md;
+  }
+
+  /* Linear-style button */
+  .btn-linear {
+    @apply inline-flex items-center justify-center gap-2;
+    @apply px-4 py-2 rounded-lg font-medium text-sm;
+    @apply transition-all duration-150;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2;
+    @apply dark:focus-visible:ring-offset-[#0d0d0f];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-linear-primary {
+    @apply bg-indigo-500 text-white;
+    @apply hover:bg-indigo-600;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-linear-secondary {
+    @apply bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100;
+    @apply hover:bg-gray-200 dark:hover:bg-gray-700;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-linear-ghost {
+    @apply text-gray-600 dark:text-gray-400;
+    @apply hover:bg-gray-100 dark:hover:bg-gray-800;
+    @apply hover:text-gray-900 dark:hover:text-gray-100;
+  }
+
+  /* Linear-style input */
+  .input-linear {
+    @apply w-full px-3 py-2 rounded-lg text-sm;
+    @apply bg-white dark:bg-[#17171c];
+    @apply border border-gray-200 dark:border-gray-700;
+    @apply text-gray-900 dark:text-gray-100;
+    @apply placeholder:text-gray-400 dark:placeholder:text-gray-500;
+    @apply focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
+    @apply transition-all duration-150;
+  }
+
+  /* Status badges - Linear style */
+  .badge-linear {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply transition-all duration-150;
+  }
+
+  .badge-purple {
+    @apply bg-purple-500/10 text-purple-500 dark:bg-purple-500/20 dark:text-purple-400;
+  }
+
+  .badge-blue {
+    @apply bg-blue-500/10 text-blue-500 dark:bg-blue-500/20 dark:text-blue-400;
+  }
+
+  .badge-green {
+    @apply bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20 dark:text-emerald-400;
+  }
+
+  .badge-yellow {
+    @apply bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400;
+  }
+
+  .badge-red {
+    @apply bg-red-500/10 text-red-500 dark:bg-red-500/20 dark:text-red-400;
+  }
+
+  .badge-gray {
+    @apply bg-gray-500/10 text-gray-600 dark:bg-gray-500/20 dark:text-gray-400;
+  }
+
+  /* Priority indicators - Linear style dots */
+  .priority-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .priority-urgent {
+    @apply bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)];
+  }
+
+  .priority-high {
+    @apply bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)];
+  }
+
+  .priority-normal {
+    @apply bg-blue-500;
+  }
+
+  .priority-low {
+    @apply bg-gray-400 dark:bg-gray-600;
+  }
+
+  /* Keyboard shortcut badge */
+  .kbd {
+    @apply inline-flex items-center justify-center;
+    @apply px-1.5 py-0.5 rounded text-[10px] font-medium;
+    @apply bg-gray-100 dark:bg-gray-800;
+    @apply text-gray-500 dark:text-gray-400;
+    @apply border border-gray-200 dark:border-gray-700;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/70 dark:bg-[#17171c]/70;
+    @apply backdrop-blur-xl;
+    @apply border border-white/20 dark:border-gray-800/50;
+  }
+
+  /* Animated gradient border */
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .gradient-border:hover::before {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  .animate-in {
+    animation: animate-in 0.2s ease-out;
+  }
+
+  .animate-out {
+    animation: animate-out 0.15s ease-in;
+  }
+
+  .slide-in-from-top {
+    --tw-enter-translate-y: -0.5rem;
+  }
+
+  .slide-in-from-bottom {
+    --tw-enter-translate-y: 0.5rem;
+  }
+
+  .fade-in {
+    --tw-enter-opacity: 0;
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-transform duration-200;
+  }
+
+  .hover-lift:hover {
+    @apply -translate-y-0.5;
+  }
+
+  /* Pulse glow animation */
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  /* Shimmer effect for loading */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .dark .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+  }
+}
+
+/* Keyframe animations */
+@keyframes animate-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--tw-enter-translate-y, 0)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes animate-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--tw-enter-translate-y, 0)) scale(0.98);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Focus visible styles */
+.focus-ring {
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2;
+  @apply dark:focus-visible:ring-offset-[#0d0d0f];
+}
+
+/* ChatKit styling */
+openai-chatkit {
+  --chatkit-primary-color: #6366f1;
+  --chatkit-background: rgb(var(--color-background));
+  --chatkit-text-color: rgb(var(--color-foreground));
+  display: block;
+  width: 100%;
+  height: 100%;
+}

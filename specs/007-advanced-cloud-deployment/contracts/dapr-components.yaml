@@ -1,0 +1,97 @@
+# Dapr Component Configurations for Phase 5
+# These files go in: backend/dapr/components/
+
+---
+# Pub/Sub Component - Kafka/Redpanda
+# File: backend/dapr/components/pubsub.yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    # Local development with Redpanda
+    - name: brokers
+      value: "localhost:9092"
+    # Production: Use secretKeyRef for broker URL
+    # - name: brokers
+    #   secretKeyRef:
+    #     name: kafka-secrets
+    #     key: brokers
+    - name: consumerGroup
+      value: "todo-backend"
+    - name: clientID
+      value: "todo-app"
+    - name: authType
+      value: "none"  # Use "sasl" for production with auth
+    - name: initialOffset
+      value: "newest"
+    - name: maxMessageBytes
+      value: "1048576"  # 1MB
+
+---
+# Cron Binding - Reminder Scheduler
+# File: backend/dapr/components/cron-reminder.yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    - name: schedule
+      value: "@every 15m"  # Every 15 minutes
+    - name: direction
+      value: "input"
+
+---
+# Secrets Store - Kubernetes Secrets
+# File: backend/dapr/components/secrets.yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-secrets
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata: []
+
+---
+# Topics Configuration
+# Defined in application subscription, not as component
+
+# Topic: todo.reminders
+# - Publisher: Reminder service (cron-triggered)
+# - Subscribers: Notification service
+# - Purpose: Task due date approaching
+
+# Topic: todo.audit
+# - Publisher: Task service (all mutations)
+# - Subscribers: Audit service
+# - Purpose: Track all task changes
+
+---
+# Subscription Configuration
+# File: backend/dapr/components/subscriptions.yaml
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: todo-reminders-sub
+spec:
+  topic: todo.reminders
+  routes:
+    default: /events/reminders
+  pubsubname: todo-pubsub
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: todo-audit-sub
+spec:
+  topic: todo.audit
+  routes:
+    default: /events/audit
+  pubsubname: todo-pubsub

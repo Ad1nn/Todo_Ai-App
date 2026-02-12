@@ -1,0 +1,106 @@
+{{/*
+=============================================================================
+backend-deployment.yaml - Backend Deployment
+=============================================================================
+
+LEARNING NOTES:
+- Deployment manages the desired state of pods
+- It handles:
+  - Creating pods to match replicaCount
+  - Rolling updates when you change the image
+  - Rollback if something goes wrong
+- The 'spec.selector' must match 'spec.template.metadata.labels'
+
+=============================================================================
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "todo-app.backend.fullname" . }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    {{- include "todo-app.backend.selectorLabels" . | nindent 4 }}
+spec:
+  # Number of pod replicas to run
+  replicas: {{ .Values.backend.replicaCount }}
+
+  # How to identify pods that belong to this deployment
+  selector:
+    matchLabels:
+      {{- include "todo-app.backend.selectorLabels" . | nindent 6 }}
+
+  # Rolling update strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Allow 1 extra pod during update
+      maxUnavailable: 0  # Never have fewer pods than replicas
+
+  # Pod template - what each pod looks like
+  template:
+    metadata:
+      labels:
+        {{- include "todo-app.backend.selectorLabels" . | nindent 8 }}
+      annotations:
+        # Force pod restart when secrets change
+        checksum/secrets: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- if .Values.backend.dapr.enabled }}
+        # Dapr sidecar annotations
+        dapr.io/enabled: "true"
+        dapr.io/app-id: {{ .Values.backend.dapr.appId | quote }}
+        dapr.io/app-port: {{ .Values.backend.dapr.appPort | quote }}
+        dapr.io/enable-api-logging: "true"
+        dapr.io/log-level: "info"
+        dapr.io/config: "tracing"
+        {{- end }}
+    spec:
+      # Security context for the pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+
+          # Container port
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+
+          # Environment variables from values
+          env:
+            {{- range $key, $value := .Values.backend.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+
+          # Environment variables from secrets
+          envFrom:
+            - secretRef:
+                name: {{ include "todo-app.fullname" . }}-secrets
+
+          # Resource limits
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+
+          # Liveness probe - restart if unhealthy
+          livenessProbe:
+            {{- toYaml .Values.backend.livenessProbe | nindent 12 }}
+
+          # Readiness probe - remove from LB if not ready
+          readinessProbe:
+            {{- toYaml .Values.backend.readinessProbe | nindent 12 }}
+
+          # Security context for the container
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL

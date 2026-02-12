@@ -1,0 +1,148 @@
+openapi: 3.0.3
+info:
+  title: Todo App - Audit API
+  description: API endpoints for viewing audit trail
+  version: 1.0.0
+
+paths:
+  /api/v1/audit:
+    get:
+      summary: List audit entries for current user
+      tags: [Audit]
+      parameters:
+        - name: entity_type
+          in: query
+          schema:
+            type: string
+            enum: [task, notification]
+        - name: entity_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [create, update, complete, delete]
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of audit entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+                  total:
+                    type: integer
+
+  /api/v1/audit/task/{task_id}:
+    get:
+      summary: Get audit history for a specific task
+      tags: [Audit]
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Audit history for task
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                    format: uuid
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+        '404':
+          description: Task not found
+
+components:
+  schemas:
+    AuditEntry:
+      type: object
+      required:
+        - id
+        - user_id
+        - entity_type
+        - entity_id
+        - action
+        - timestamp
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        entity_type:
+          type: string
+          enum: [task, notification]
+        entity_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [create, update, complete, delete]
+        before_value:
+          type: object
+          nullable: true
+          additionalProperties: true
+        after_value:
+          type: object
+          nullable: true
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          nullable: true
+          additionalProperties: true
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

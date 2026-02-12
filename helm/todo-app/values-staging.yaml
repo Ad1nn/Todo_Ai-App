@@ -1,0 +1,114 @@
+# =============================================================================
+# values-staging.yaml - Staging Environment Configuration
+# =============================================================================
+#
+# Usage: helm upgrade --install todo-app ./helm/todo-app -f helm/todo-app/values-staging.yaml
+#
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Backend Configuration - Staging
+# ---------------------------------------------------------------------------
+backend:
+  replicaCount: 1
+
+  image:
+    repository: registry.digitalocean.com/todo-registry/todo-backend
+    pullPolicy: Always
+    tag: "staging"
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  env:
+    JWT_ALGORITHM: "HS256"
+    CORS_ORIGINS: '["https://staging.todo-app.example.com"]'
+    LOG_LEVEL: "DEBUG"
+
+  # Dapr configuration
+  dapr:
+    enabled: true
+    appId: "todo-backend"
+    appPort: "8000"
+
+# ---------------------------------------------------------------------------
+# Frontend Configuration - Staging
+# ---------------------------------------------------------------------------
+frontend:
+  replicaCount: 1
+
+  image:
+    repository: registry.digitalocean.com/todo-registry/todo-frontend
+    pullPolicy: Always
+    tag: "staging"
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+  env:
+    NODE_ENV: "staging"
+    NEXT_PUBLIC_API_URL: "https://staging-api.todo-app.example.com"
+
+# ---------------------------------------------------------------------------
+# Ingress Configuration - Staging
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: staging.todo-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend
+  tls:
+    - secretName: todo-app-staging-tls
+      hosts:
+        - staging.todo-app.example.com
+
+# ---------------------------------------------------------------------------
+# Dapr Components - Staging
+# ---------------------------------------------------------------------------
+dapr:
+  enabled: true
+  pubsub:
+    name: "todo-pubsub"
+    type: "pubsub.kafka"
+    brokers: "redpanda-staging:9092"
+    consumerGroup: "todo-backend-staging"
+
+# ---------------------------------------------------------------------------
+# Autoscaling - Disabled for Staging
+# ---------------------------------------------------------------------------
+autoscaling:
+  enabled: false
+
+# ---------------------------------------------------------------------------
+# Pod Disruption Budget - Disabled for Staging
+# ---------------------------------------------------------------------------
+podDisruptionBudget:
+  enabled: false

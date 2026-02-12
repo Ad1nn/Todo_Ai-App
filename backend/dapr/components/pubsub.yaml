@@ -1,0 +1,28 @@
+# Dapr Pub/Sub Component - Kafka/Redpanda
+# This component enables event publishing and subscribing via Kafka
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    # Local development with Redpanda
+    - name: brokers
+      value: "localhost:9092"
+    # Consumer group for load balancing across replicas
+    - name: consumerGroup
+      value: "todo-backend"
+    # Client identifier
+    - name: clientID
+      value: "todo-app"
+    # No authentication for local development
+    - name: authType
+      value: "none"
+    # Start consuming from newest messages
+    - name: initialOffset
+      value: "newest"
+    # Maximum message size (1MB)
+    - name: maxMessageBytes
+      value: "1048576"

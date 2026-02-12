@@ -1,0 +1,48 @@
+# =============================================================================
+# Backend Docker Ignore
+# =============================================================================
+# These files are excluded from the Docker build context.
+# This makes builds faster and images smaller.
+
+# Virtual environments (we create our own in the container)
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Testing and development
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+tests/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation (except README.md needed by pyproject.toml)
+!README.md
+docs/
+
+# Environment files (we pass these as secrets/configmaps in K8s)
+.env
+.env.*
+
+# Docker
+Dockerfile
+docker-compose*.yml
+
+# Misc
+*.log
+*.tmp

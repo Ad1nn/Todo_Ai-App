@@ -1,0 +1,16 @@
+# Dapr Cron Binding - Reminder Scheduler
+# This binding triggers reminder checks every 15 minutes
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    # Run every 15 minutes
+    - name: schedule
+      value: "@every 15m"
+    # Input binding (triggers endpoint)
+    - name: direction
+      value: "input"

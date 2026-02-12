@@ -1,0 +1,328 @@
+# OpenAPI Contract: Task Enhancements
+# Feature: 005-task-enhancements
+# Date: 2026-02-04
+
+openapi: 3.1.0
+info:
+  title: Task API - Enhanced
+  version: 1.1.0
+  description: Task management API with due dates, priority, and categories
+
+paths:
+  /api/v1/tasks:
+    get:
+      summary: List tasks with optional filters
+      operationId: listTasks
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 50
+          description: Filter by category (exact match)
+        - name: priority
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Priority'
+          description: Filter by priority level
+        - name: completed
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Filter by completion status
+        - name: overdue
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: If true, return only overdue tasks (due_date < now AND not completed)
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [created_at, due_date, priority]
+            default: created_at
+          description: Sort field
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskPublic'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create a new task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPublic'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/tasks/{task_id}:
+    parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      summary: Get a single task
+      operationId: getTask
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPublic'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update a task
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPublic'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete a task
+      operationId: deleteTask
+      responses:
+        '204':
+          description: Task deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/tasks/{task_id}/toggle:
+    parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      summary: Toggle task completion status
+      operationId: toggleTask
+      responses:
+        '200':
+          description: Task toggled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPublic'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/tasks/categories:
+    get:
+      summary: List user's categories
+      operationId: listCategories
+      description: Returns distinct categories from user's tasks
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["work", "personal", "shopping"]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  schemas:
+    Priority:
+      type: string
+      enum: [low, normal, high, urgent]
+      description: Task priority level
+
+    TaskCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO 8601 datetime
+        priority:
+          $ref: '#/components/schemas/Priority'
+          nullable: true
+        category:
+          type: string
+          maxLength: 50
+          nullable: true
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        priority:
+          $ref: '#/components/schemas/Priority'
+          nullable: true
+        category:
+          type: string
+          maxLength: 50
+          nullable: true
+
+    TaskPublic:
+      type: object
+      required:
+        - id
+        - title
+        - completed
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        completed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        priority:
+          $ref: '#/components/schemas/Priority'
+          nullable: true
+        category:
+          type: string
+          nullable: true
+
+    ApiError:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            detail: "Not authenticated"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            detail: "Task not found"
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    loc:
+                      type: array
+                      items:
+                        type: string
+                    msg:
+                      type: string
+                    type:
+                      type: string

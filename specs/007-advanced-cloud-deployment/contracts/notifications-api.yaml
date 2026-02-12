@@ -1,0 +1,161 @@
+openapi: 3.0.3
+info:
+  title: Todo App - Notifications API
+  description: API endpoints for in-app notifications
+  version: 1.0.0
+
+paths:
+  /api/v1/notifications:
+    get:
+      summary: List notifications for current user
+      tags: [Notifications]
+      parameters:
+        - name: unread_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  unread_count:
+                    type: integer
+                  total:
+                    type: integer
+
+  /api/v1/notifications/unread-count:
+    get:
+      summary: Get unread notification count
+      tags: [Notifications]
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+
+  /api/v1/notifications/{notification_id}/read:
+    post:
+      summary: Mark notification as read
+      tags: [Notifications]
+      parameters:
+        - name: notification_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '404':
+          description: Notification not found
+
+  /api/v1/notifications/mark-all-read:
+    post:
+      summary: Mark all notifications as read
+      tags: [Notifications]
+      responses:
+        '200':
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated_count:
+                    type: integer
+
+  /api/v1/notifications/clear:
+    delete:
+      summary: Clear all notifications
+      tags: [Notifications]
+      responses:
+        '200':
+          description: All notifications deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+components:
+  schemas:
+    Notification:
+      type: object
+      required:
+        - id
+        - user_id
+        - type
+        - title
+        - read
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [reminder, system, action]
+        title:
+          type: string
+          maxLength: 100
+        message:
+          type: string
+          maxLength: 500
+          nullable: true
+        read:
+          type: boolean
+        task_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

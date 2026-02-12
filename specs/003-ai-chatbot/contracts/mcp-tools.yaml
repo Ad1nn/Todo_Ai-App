@@ -1,0 +1,343 @@
+mcp_version: "1.0"
+server:
+  name: "todo-task-management"
+  version: "1.0.0"
+  description: "MCP server exposing task management operations for AI agents"
+
+tools:
+  - name: add_task
+    description: |
+      Create a new task for the user. Supports optional due dates.
+      Returns the created task ID and status.
+    parameters:
+      type: object
+      required:
+        - user_id
+        - title
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: User ID (enforces ownership)
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Task title
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          description: Optional due date (ISO 8601 format YYYY-MM-DD)
+    returns:
+      type: object
+      required:
+        - task_id
+        - status
+        - data
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: ID of created task
+        status:
+          type: string
+          enum: [success, error]
+          description: Operation status
+        data:
+          type: object
+          properties:
+            title:
+              type: string
+            completed:
+              type: boolean
+            due_date:
+              type: string
+              format: date
+              nullable: true
+    examples:
+      - parameters:
+          user_id: "123e4567-e89b-12d3-a456-426614174000"
+          title: "Buy groceries"
+          due_date: "2026-01-24"
+        returns:
+          task_id: "456e7890-e12c-34d5-b789-012345678999"
+          status: "success"
+          data:
+            title: "Buy groceries"
+            completed: false
+            due_date: "2026-01-24"
+
+  - name: list_tasks
+    description: |
+      List all tasks for the user. Optionally filter by completion status.
+      Returns array of tasks with IDs, titles, completion status, and due dates.
+    parameters:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: User ID (enforces ownership)
+        completed:
+          type: boolean
+          nullable: true
+          description: Filter by completion status (null = all tasks)
+    returns:
+      type: object
+      required:
+        - status
+        - tasks
+      properties:
+        status:
+          type: string
+          enum: [success, error]
+          description: Operation status
+        tasks:
+          type: array
+          description: Array of tasks matching filter
+          items:
+            type: object
+            required:
+              - id
+              - title
+              - completed
+            properties:
+              id:
+                type: string
+                format: uuid
+              title:
+                type: string
+              completed:
+                type: boolean
+              due_date:
+                type: string
+                format: date
+                nullable: true
+    examples:
+      - parameters:
+          user_id: "123e4567-e89b-12d3-a456-426614174000"
+          completed: false
+        returns:
+          status: "success"
+          tasks:
+            - id: "456e7890-e12c-34d5-b789-012345678999"
+              title: "Buy groceries"
+              completed: false
+              due_date: "2026-01-24"
+            - id: "567e8901-e23d-45e6-c890-123456789000"
+              title: "Finish report"
+              completed: false
+              due_date: null
+
+  - name: complete_task
+    description: |
+      Mark a task as completed. Task must exist and belong to the user.
+      Returns updated task status.
+    parameters:
+      type: object
+      required:
+        - user_id
+        - task_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: User ID (enforces ownership)
+        task_id:
+          type: string
+          format: uuid
+          description: ID of task to complete
+    returns:
+      type: object
+      required:
+        - task_id
+        - status
+        - data
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: ID of completed task
+        status:
+          type: string
+          enum: [success, error]
+          description: Operation status
+        data:
+          type: object
+          properties:
+            title:
+              type: string
+            completed:
+              type: boolean
+            due_date:
+              type: string
+              format: date
+              nullable: true
+    errors:
+      - code: "task_not_found"
+        message: "Task not found or access denied"
+        description: "Task does not exist or does not belong to user"
+    examples:
+      - parameters:
+          user_id: "123e4567-e89b-12d3-a456-426614174000"
+          task_id: "456e7890-e12c-34d5-b789-012345678999"
+        returns:
+          task_id: "456e7890-e12c-34d5-b789-012345678999"
+          status: "success"
+          data:
+            title: "Buy groceries"
+            completed: true
+            due_date: "2026-01-24"
+
+  - name: delete_task
+    description: |
+      Delete a task. Task must exist and belong to the user.
+      Returns confirmation of deletion.
+    parameters:
+      type: object
+      required:
+        - user_id
+        - task_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: User ID (enforces ownership)
+        task_id:
+          type: string
+          format: uuid
+          description: ID of task to delete
+    returns:
+      type: object
+      required:
+        - task_id
+        - status
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: ID of deleted task
+        status:
+          type: string
+          enum: [success, error]
+          description: Operation status
+    errors:
+      - code: "task_not_found"
+        message: "Task not found or access denied"
+        description: "Task does not exist or does not belong to user"
+    examples:
+      - parameters:
+          user_id: "123e4567-e89b-12d3-a456-426614174000"
+          task_id: "456e7890-e12c-34d5-b789-012345678999"
+        returns:
+          task_id: "456e7890-e12c-34d5-b789-012345678999"
+          status: "success"
+
+  - name: update_task
+    description: |
+      Update task title and/or due date. Task must exist and belong to the user.
+      At least one of title or due_date must be provided.
+      Returns updated task.
+    parameters:
+      type: object
+      required:
+        - user_id
+        - task_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: User ID (enforces ownership)
+        task_id:
+          type: string
+          format: uuid
+          description: ID of task to update
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          nullable: true
+          description: New task title (optional)
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          description: New due date (optional, ISO 8601 format YYYY-MM-DD)
+    returns:
+      type: object
+      required:
+        - task_id
+        - status
+        - data
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: ID of updated task
+        status:
+          type: string
+          enum: [success, error]
+          description: Operation status
+        data:
+          type: object
+          properties:
+            title:
+              type: string
+            completed:
+              type: boolean
+            due_date:
+              type: string
+              format: date
+              nullable: true
+    errors:
+      - code: "task_not_found"
+        message: "Task not found or access denied"
+        description: "Task does not exist or does not belong to user"
+      - code: "no_updates"
+        message: "No updates provided"
+        description: "Must provide at least one of title or due_date"
+    examples:
+      - parameters:
+          user_id: "123e4567-e89b-12d3-a456-426614174000"
+          task_id: "456e7890-e12c-34d5-b789-012345678999"
+          title: "Buy groceries and milk"
+          due_date: "2026-01-25"
+        returns:
+          task_id: "456e7890-e12c-34d5-b789-012345678999"
+          status: "success"
+          data:
+            title: "Buy groceries and milk"
+            completed: false
+            due_date: "2026-01-25"
+
+security:
+  user_isolation: true
+  enforcement: |
+    All tools MUST validate that user_id parameter matches the authenticated
+    user's ID. Tools MUST NOT allow users to access or modify other users' tasks.
+
+    Validation happens in two layers:
+    1. FastAPI endpoint validates JWT token and extracts user_id
+    2. MCP tool validates user_id parameter matches endpoint user_id
+
+error_handling:
+  structured_errors: true
+  user_friendly: true
+  guidelines: |
+    All errors returned to agent MUST be user-friendly messages.
+    Examples:
+    - "Task not found" instead of "SQLAlchemy IntegrityError"
+    - "I couldn't find that task" instead of "404 Not Found"
+    - "Chat temporarily unavailable" instead of "OpenAI API rate limit exceeded"
+
+testing:
+  mock_data: true
+  requirements: |
+    Each MCP tool MUST be tested independently with mock data:
+    - Test user isolation (user A cannot access user B's tasks)
+    - Test input validation (invalid UUIDs, empty titles, etc.)
+    - Test error cases (task not found, database errors)
+    - Test success cases with various parameters

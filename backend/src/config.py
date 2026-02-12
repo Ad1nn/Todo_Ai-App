@@ -1,0 +1,37 @@
+"""Application configuration from environment variables."""
+
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment."""
+
+    # Database
+    database_url: str = "postgresql+asyncpg://user:password@localhost:5432/todo_db"
+
+    # JWT Configuration
+    jwt_secret: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expiration_hours: int = 24
+
+    # CORS
+    cors_origins: list[str] = ["http://localhost:3000"]
+
+    # Environment
+    environment: str = "development"
+
+    # OpenAI Configuration (Phase 3)
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o"
+
+    # Chat Configuration (Phase 3)
+    max_conversation_messages: int = 20
+
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
+
+
+settings = Settings()

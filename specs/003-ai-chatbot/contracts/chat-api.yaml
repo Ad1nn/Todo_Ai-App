@@ -1,0 +1,267 @@
+openapi: 3.1.0
+info:
+  title: AI Chat API
+  description: Natural language chat interface for task management
+  version: 1.0.0
+  contact:
+    name: Todo App Team
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.todo-app.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/{user_id}/chat:
+    post:
+      summary: Send chat message
+      description: |
+        Send a natural language message to the AI assistant. The assistant will
+        interpret the message, call appropriate MCP tools (add_task, list_tasks,
+        complete_task, delete_task, update_task), and return a conversational response.
+
+        The endpoint is stateless - conversation history is loaded from the database
+        on each request and all state is persisted back to the database.
+      operationId: sendChatMessage
+      tags:
+        - Chat
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User ID (must match JWT token user_id)
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              new_conversation:
+                summary: Start new conversation
+                value:
+                  message: "Remind me to buy groceries tomorrow"
+              existing_conversation:
+                summary: Continue existing conversation
+                value:
+                  message: "What tasks do I have?"
+                  conversation_id: "987e6543-e21b-98d7-a654-426614174999"
+      responses:
+        '200':
+          description: Successful response with assistant reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                task_created:
+                  summary: Task created successfully
+                  value:
+                    conversation_id: "987e6543-e21b-98d7-a654-426614174999"
+                    response: "✓ Added task: Buy groceries (due tomorrow)"
+                    tool_calls:
+                      - tool: "add_task"
+                        parameters:
+                          user_id: "123e4567-e89b-12d3-a456-426614174000"
+                          title: "buy groceries"
+                          due_date: "2026-01-24"
+                        result:
+                          task_id: "456e7890-e12c-34d5-b789-012345678999"
+                          status: "success"
+                tasks_listed:
+                  summary: Tasks listed successfully
+                  value:
+                    conversation_id: "987e6543-e21b-98d7-a654-426614174999"
+                    response: "You have 3 pending tasks:\n1. Buy groceries (due tomorrow)\n2. Finish report (due Friday)\n3. Call dentist"
+                    tool_calls:
+                      - tool: "list_tasks"
+                        parameters:
+                          user_id: "123e4567-e89b-12d3-a456-426614174000"
+                        result:
+                          tasks:
+                            - id: "456e7890-e12c-34d5-b789-012345678999"
+                              title: "Buy groceries"
+                              completed: false
+                              due_date: "2026-01-24"
+                            - id: "567e8901-e23d-45e6-c890-123456789000"
+                              title: "Finish report"
+                              completed: false
+                              due_date: "2026-01-26"
+                            - id: "678e9012-e34e-56f7-d901-234567890111"
+                              title: "Call dentist"
+                              completed: false
+                              due_date: null
+        '400':
+          description: Invalid request (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                empty_message:
+                  summary: Empty message
+                  value:
+                    error: "Message cannot be empty"
+                    detail: "Please provide a non-empty message"
+                invalid_conversation_id:
+                  summary: Invalid conversation ID format
+                  value:
+                    error: "Invalid conversation_id"
+                    detail: "conversation_id must be a valid UUID"
+        '401':
+          description: Unauthorized (invalid or missing JWT token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_token:
+                  summary: Missing JWT token
+                  value:
+                    error: "Authentication required"
+                    detail: "Please provide a valid JWT token in Authorization header"
+                user_mismatch:
+                  summary: User ID mismatch
+                  value:
+                    error: "Unauthorized"
+                    detail: "user_id in path does not match authenticated user"
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                conversation_not_found:
+                  summary: Conversation not found
+                  value:
+                    error: "Conversation not found"
+                    detail: "No conversation found with the provided conversation_id"
+        '500':
+          description: Internal server error (including OpenAI API failures)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                openai_error:
+                  summary: OpenAI API failure
+                  value:
+                    error: "Chat temporarily unavailable"
+                    detail: "Please try again in a moment"
+                database_error:
+                  summary: Database error
+                  value:
+                    error: "Internal server error"
+                    detail: "An error occurred processing your request"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Better Auth authentication
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: Natural language message from user
+          example: "Add a task to buy groceries tomorrow"
+        conversation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            Optional conversation ID to continue existing conversation.
+            If not provided, a new conversation will be created.
+          example: "987e6543-e21b-98d7-a654-426614174999"
+
+    ChatResponse:
+      type: object
+      required:
+        - conversation_id
+        - response
+        - tool_calls
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+          description: |
+            Conversation ID for this exchange. Use this in subsequent
+            requests to maintain conversation context.
+          example: "987e6543-e21b-98d7-a654-426614174999"
+        response:
+          type: string
+          description: Natural language response from AI assistant
+          example: "✓ Added task: Buy groceries (due tomorrow)"
+        tool_calls:
+          type: array
+          description: |
+            Array of MCP tool calls made by the agent during processing.
+            Useful for debugging and audit trail.
+          items:
+            $ref: '#/components/schemas/ToolCall'
+
+    ToolCall:
+      type: object
+      required:
+        - tool
+        - parameters
+        - result
+      properties:
+        tool:
+          type: string
+          enum:
+            - add_task
+            - list_tasks
+            - complete_task
+            - delete_task
+            - update_task
+          description: Name of MCP tool called
+          example: "add_task"
+        parameters:
+          type: object
+          description: Parameters passed to the tool
+          additionalProperties: true
+          example:
+            user_id: "123e4567-e89b-12d3-a456-426614174000"
+            title: "buy groceries"
+            due_date: "2026-01-24"
+        result:
+          type: object
+          description: Result returned by the tool
+          additionalProperties: true
+          example:
+            task_id: "456e7890-e12c-34d5-b789-012345678999"
+            status: "success"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: User-friendly error message
+          example: "Chat temporarily unavailable"
+        detail:
+          type: string
+          nullable: true
+          description: Additional error details (optional)
+          example: "Please try again in a moment"
