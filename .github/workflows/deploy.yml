@@ -36,7 +36,7 @@ on:
 
 env:
   REGISTRY: registry.digitalocean.com
-  REGISTRY_NAME: todo-registry
+  REGISTRY_NAME: ad1nn-todo-registry
 
 jobs:
   # ---------------------------------------------------------------------------
