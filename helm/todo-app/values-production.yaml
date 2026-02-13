@@ -15,7 +15,7 @@ backend:
   replicaCount: 2
 
   image:
-    repository: registry.digitalocean.com/todo-registry/todo-backend
+    repository: todo-backend  # Overridden by CI/CD with Docker Hub username
     pullPolicy: Always
     tag: "latest"  # Overridden by CI/CD with git SHA
 
@@ -68,7 +68,7 @@ frontend:
   replicaCount: 2
 
   image:
-    repository: registry.digitalocean.com/todo-registry/todo-frontend
+    repository: todo-frontend  # Overridden by CI/CD with Docker Hub username
     pullPolicy: Always
     tag: "latest"  # Overridden by CI/CD with git SHA
 
