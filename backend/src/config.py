@@ -1,6 +1,7 @@
 """Application configuration from environment variables."""
 
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -14,8 +15,19 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
 
-    # CORS
-    cors_origins: list[str] = ["http://localhost:3000"]
+    # CORS - can be set as comma-separated string in env: CORS_ORIGINS="url1,url2"
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "https://todoaiapp.vercel.app",
+        "https://*.vercel.app",
+    ]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     # Environment
     environment: str = "development"
