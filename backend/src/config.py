@@ -16,11 +16,7 @@ class Settings(BaseSettings):
     jwt_expiration_hours: int = 24
 
     # CORS - can be set as comma-separated string in env: CORS_ORIGINS="url1,url2"
-    cors_origins: list[str] = [
-        "http://localhost:3000",
-        "https://todoaiapp.vercel.app",
-        "https://*.vercel.app",
-    ]
+    cors_origins: list[str] = ["*"]  # Allow all origins for now
 
     @field_validator("cors_origins", mode="before")
     @classmethod
